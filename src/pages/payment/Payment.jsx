@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { BiCheck, BiChevronLeft, BiCreditCard } from 'react-icons/bi';
 import { CgSmartphone } from 'react-icons/cg';
 import ProductDetail from './productDetail/ProductDetail';
 import axios from 'axios';
 import { cardApi, phoneApi } from '../../constants/services';
 import { useNavigate } from 'react-router-dom';
+import { Context } from '../../App';
+import { nanoid } from 'nanoid';
 
 const Payment = () => {
+    const { cardArr, setCardArr, phoneArr, setPhoneArr } = useContext(Context)
     const [isCardMode, setIsCardMode] = useState(true);
-    const [cardForm, setCardForm] = useState({});
     const [expiryDate, setExpiryDate] = useState('');
     const [cardError, setCardError] = useState('')
     const [cardNumber, setCardNumber] = useState('')
@@ -44,7 +46,7 @@ const Payment = () => {
             setCardNumber(formattedValue);
             setCardError('');
         } else {
-            setCardNumber(''); // Очищаем, если номер невалидный
+            setCardNumber('');
             setCardError('Неверный номер карты');
         }
         setIsValidCard(sum % 10 === 0 && value.length === 16);
@@ -63,27 +65,16 @@ const Payment = () => {
                 cardHolder: name,
                 expiryDate: expiryDate,
                 url: `${cardApi}${name}`,
-                data: dateTime
+                data: dateTime,
+                id: nanoid()
             }
-            setCardForm(cardObj)
-            console.log(cardObj)
-            if (isValidCard) {
-                axios.post(cardApi, cardObj)
-                    .then(responce => console.log(responce))
-                    .then(() => alert('Заявка успешно принята'))
-            }
-            else {
-                alert('Введите правильную карту')
-            }
+            setCardArr([...cardArr, cardObj])
+            alert('Покубка прошла успешно')
         }
         catch (err) {
             console.log(err)
         }
     };
-
-    useEffect(() => {
-        console.log("Обновленный cardForm:", cardForm);
-    }, [cardForm]);
     const handlePhoneSubmit = e => {
         e.preventDefault()
         const forma = new FormData(e.target)
@@ -91,18 +82,18 @@ const Payment = () => {
         const phoneObject = {
             tel,
             name,
-            data: dateTime
+            data: dateTime,
+            id: nanoid()
         }
-        console.log(phoneObject)
         try {
-            axios.post(phoneApi, phoneObject)
-                .then(response => console.log(response))
+            setPhoneArr([...phoneArr, phoneObject])
+            alert('Заказ принят')
         }
         catch (err) {
             console.log(err)
         }
     }
-
+    console.log(cardArr)
     return (
         <div className="min-h-screen lg:flex-row flex-col max-w-[1340px] m-auto flex items-start justify-center bg-gradient-to-b">
             <ProductDetail />
@@ -132,14 +123,13 @@ const Payment = () => {
                         </div>
                     </button>
                 </div>
-
                 {isCardMode && (
                     <form onSubmit={handleFormSubmit} className="space-y-6">
                         <div className='flex items-start gap-3'>
                             <div className='w-[100%] flex-2'>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
                                 <input
-                                    type="text"
+                                    type="tel"
                                     name="card_number"
                                     placeholder="1234 5678 9012 3456"
                                     required

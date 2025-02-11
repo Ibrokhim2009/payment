@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     BiCreditCard,
     BiTime,
@@ -15,65 +15,18 @@ import {
 import axios from 'axios';
 import { cardApi } from '../../constants/services';
 import { useNavigate } from 'react-router-dom';
+import { Context } from '../../App';
 
 const CardsTable = () => {
+    const { cardArr, setCardArr } = useContext(Context)
     const [cards, setCards] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [selectedCard, setSelectedCard] = useState(null);
-    const [isCompact, setIsCompact] = useState(false);
     const navigate = useNavigate()
-    useEffect(() => {
-        fetchCards();
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    const handleResize = () => {
-        setIsCompact(window.innerWidth < 768);
-    };
-
-    const fetchCards = async () => {
-        try {
-            const response = await axios.get(cardApi);
-            setCards(response.data);
-            setLoading(false);
-        } catch (err) {
-            setError('Failed to fetch card data');
-            setLoading(false);
-        }
-    };
-
     const formatCardNumber = (number) => `${number.slice(0, 4)} •••• •••• ${number.slice(-4)}`;
+    const handleCardDelete = (id) => {
+        setCardArr(prevCards => prevCards.filter(card => card.id !== id));
+    };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <BiLoaderAlt className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="max-w-4xl mx-auto mt-8 bg-white rounded-lg shadow-lg p-6">
-                <div className="flex items-center justify-center text-red-500">
-                    <BiLoaderAlt className="w-6 h-6 mr-2" />
-                    {error}
-                </div>
-            </div>
-        );
-    }
-    const handleCardDelete = item => {
-        try {
-            axios.delete(`${cardApi}${item}`)
-            window.location.reload()
-        }
-        catch (err) {
-            console.log(err)
-        }
-    }
     return (
         <div className="min-h-screen bg-gradient-to-br ">
             <div className="max-w-4xl mx-auto">
@@ -87,9 +40,8 @@ const CardsTable = () => {
                 </button>
                 <div className="relative">
                     <div className="absolute left-8 top-0 bottom-0 w-px bg-gray-200 hidden md:block" />
-                    <div className={`grid gap-4 md:space-y-6 md:block
-                        ${isCompact ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-1'}`}>
-                        {cards.map((card, index) => (
+                    <div className={`grid gap-4 md:space-y-6 md:block grid-cols-1`}>
+                        {cardArr.map((card, index) => (
                             <div
                                 key={card.id}
                                 className={`
@@ -97,19 +49,12 @@ const CardsTable = () => {
                                     ${selectedCard === card.id ? 'scale-102 -translate-y-1' : ''}
                                 `}
                                 onClick={() => setSelectedCard(card.id)}
-                                style={{
-                                    animationDelay: `${index * 150}ms`,
-                                    animation: 'slideIn 0.5s ease-out forwards'
-                                }}
                             >
-                                {/* Timeline dot - visible only on desktop */}
                                 <div className={`
                                     absolute left-7 w-3 h-3 transform -translate-x-1/2 rounded-full hidden md:block
                                     ${selectedCard === card.id ? 'bg-blue-500 ring-4 ring-blue-100' : 'bg-gray-400 ring-4 ring-gray-100'}
                                     transition-colors duration-200
                                 `} />
-
-                                {/* Card content with responsive layout */}
                                 <div className={`
                                     group relative bg-white rounded-lg shadow-sm border
                                     hover:shadow-lg transition-all duration-200
@@ -142,10 +87,7 @@ const CardsTable = () => {
                                                 </button>
                                             </div>
                                         </div>
-
-                                        {/* Responsive additional details grid */}
-                                        <div className={`grid gap-3 pt-4 border-t border-gray-100
-                                            ${isCompact ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-3'}`}>
+                                        <div className={`grid gap-3 pt-4 border-t border-gray-100 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3`}>
                                             <div className="flex items-center space-x-2">
                                                 <BiCalendar className="w-4 h-4 text-gray-400" />
                                                 <span className="text-sm text-gray-600">
@@ -166,17 +108,13 @@ const CardsTable = () => {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Responsive status bar */}
-
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* Responsive Empty State */}
-                {cards.length === 0 && (
+                {cardArr.length === 0 && (
                     <div className="bg-white rounded-lg shadow-lg p-6 md:p-12 text-center">
                         <BiCreditCard className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No payment methods found</h3>
@@ -187,25 +125,6 @@ const CardsTable = () => {
                     </div>
                 )}
             </div>
-
-            <style jsx>{`
-                @keyframes slideIn {
-                    from {
-                        opacity: 0;
-                        transform: ${window.innerWidth < 768 ? 'translateY(20px)' : 'translateX(-20px)'};
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translate(0);
-                    }
-                }
-
-                @media (max-width: 768px) {
-                    .scale-102 {
-                        transform: scale(1.02);
-                    }
-                }
-            `}</style>
         </div>
     );
 };

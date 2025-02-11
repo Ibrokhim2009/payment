@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     BiPhone,
     BiLoaderAlt,
@@ -9,16 +9,14 @@ import {
 import axios from 'axios';
 import { phoneApi } from '../../constants/services';
 import { useNavigate } from 'react-router-dom';
+import { Context } from '../../App';
 
 const PhoneTable = () => {
-    const [contacts, setContacts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const { phoneArr, setPhoneArr } = useContext(Context)
     const [selectedContact, setSelectedContact] = useState(null);
-    const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+    const [viewMode, setViewMode] = useState('list');
     const navigate = useNavigate()
     useEffect(() => {
-        fetchContacts();
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
@@ -27,44 +25,17 @@ const PhoneTable = () => {
     const handleResize = () => {
         setViewMode(window.innerWidth < 768 ? 'grid' : 'list');
     };
-
-    const fetchContacts = async () => {
-        try {
-            const response = await axios.get(phoneApi);
-            setContacts(response.data);
-            setLoading(false);
-        } catch (err) {
-            setError('Failed to fetch contacts');
-            setLoading(false);
-        }
-    };
-
     const formatPhoneNumber = (number) => {
         return number.replace(/(\+\d{3})(\d{2})(\d{3})(\d{4})/, '$1 $2 $3 $4');
     };
+    const handlePhoneElementDelete = (id) => {
+        try {
+            setPhoneArr(prevPhones => prevPhones.filter(phone => phone.id !== id));
+        } catch (err) {
+            console.error("Ошибка при удалении номера:", err);
+        }
+    };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <BiLoaderAlt className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="max-w-4xl mx-auto mt-8 bg-white rounded-lg shadow-lg p-6">
-                <div className="flex items-center justify-center text-red-500">
-                    <BiLoaderAlt className="w-6 h-6 mr-2" />
-                    {error}
-                </div>
-            </div>
-        );
-    }
-    const handlePhoneElementDelete = id => {
-        axios.delete(`${phoneApi}${id}`)
-        window.location.reload();
-    }
     return (
         <div className="min-h-screen">
             <div className="max-w-4xl mx-auto">
@@ -76,7 +47,7 @@ const PhoneTable = () => {
                     <BiArrowBack className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
                     <span className="font-medium">Назад</span>
                 </button>
-                
+
                 <div className="relative">
                     {viewMode === 'list' && (
                         <div className="absolute left-8 top-0 bottom-0 w-px bg-blue-200" />
@@ -87,7 +58,7 @@ const PhoneTable = () => {
                             ? 'grid grid-cols-1 sm:grid-cols-2 gap-4'
                             : 'space-y-6'}
                     `}>
-                        {contacts?.map((contact, index) => (
+                        {phoneArr?.map((contact, index) => (
                             <div
                                 key={contact.id}
                                 className={`
@@ -150,7 +121,7 @@ const PhoneTable = () => {
                         ))}
                     </div>
                 </div>
-                {contacts.length === 0 && (
+                {phoneArr.length === 0 && (
                     <div className="bg-white rounded-lg shadow-lg p-8 md:p-12 text-center">
                         <BiPhone className="w-12 h-12 md:w-16 md:h-16 text-blue-500 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No contacts found</h3>
@@ -163,36 +134,6 @@ const PhoneTable = () => {
                     </div>
                 )}
             </div>
-
-            <style jsx>{`
-                @keyframes slideIn {
-                    from {
-                        opacity: 0;
-                        transform: translateX(-20px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateX(0);
-                    }
-                }
-
-                @keyframes fadeIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(10px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-
-                @media (max-width: 768px) {
-                    .scale-102 {
-                        transform: scale(1.02);
-                    }
-                }
-            `}</style>
         </div>
     );
 };
